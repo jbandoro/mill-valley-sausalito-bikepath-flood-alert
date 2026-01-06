@@ -1,0 +1,22 @@
+[package]
+name = "mill-valley-sausalito-bikepath-flood-alert"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+askama = "0.15.1"
+axum = "0.8.8"
+chrono = { version = "0.4.42", features = ["serde"] }
+chrono-tz = "0.10.4"
+clap = { version = "4.5.54", features = ["derive"] }
+dotenvy = "0.15.7"
+noaa-tides = "0.0.1"
+reqwest = { version = "0.13.1", features = ["form", "json"] }
+serde = { version = "1.0.228", features = ["derive"] }
+sqlx = { version = "0.8.6", features = ["runtime-tokio", "sqlite", "chrono", "uuid"] }
+tokio = { version = "1.49.0", features = ["full"] }
+tower-http = { version = "0.6.8", features = ["trace"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
+uuid = { version = "1.19.0", features = ["v4", "v7"] }
+validator = { version = "0.20.0", features = ["derive"] }
