@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        UPDATE users\n        SET is_verified = 1, is_subscribed = 1\n        WHERE verification_token = ? AND is_verified = 0\n        RETURNING email;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "email",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 1
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "cf1302b5f28fa3db9ccfa0cb999e345b475d1234c0a593a75257245c7a368949"
+}

@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Verification - MV-Sausalito Alerts</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.1.1/css/pico.min.css">
+    <style>
+        body { display: flex; align-items: center; min-height: 100vh; }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <article style="max-width: 500px; margin: auto; text-align: center;">
+            <header>
+                <h2 style="margin-bottom: 0; color: {% if success %}var(--pico-ins-color){% else %}var(--pico-del-color){% endif %};">
+                    {% if success %}Success!{% else %}Issue Detected{% endif %}
+                </h2>
+            </header>
+            <p>{{ message }}</p>
+            <footer>
+                <a href="/" class="button contrast">Return to Home</a>
+            </footer>
+        </article>
+    </main>
+</body>
+</html>

@@ -1,0 +1,11 @@
+target/
+.git/
+.gitignore
+.vscode/
+Dockerfile
+.dockerignore
+*.db
+.env
+*.db-shm
+*.db-wal
+

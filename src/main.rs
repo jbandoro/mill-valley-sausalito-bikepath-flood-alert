@@ -1,8 +1,6 @@
 use axum::{
     Router,
-    extract::State,
-    response::Html,
-    routing::{get, post},
+    routing::{any, get, post},
 };
 use dotenvy::dotenv;
 use sqlx::sqlite::{
@@ -11,18 +9,20 @@ use sqlx::sqlite::{
 use std::env;
 use std::str::FromStr;
 use std::sync::Arc;
+use tower_http::services::ServeDir;
 use tower_http::trace::TraceLayer;
-use tracing_subscriber;
 
 mod handlers;
 mod mail;
 mod models;
 mod tides;
 
-use crate::handlers::{fallback_handler, home_handler, sign_up_handler, verify_handler};
-use crate::mail::MailgunClient;
-use crate::tides::update_tide_predictions;
-
+use crate::handlers::{
+    fallback_handler, home_handler, sign_up_handler, unsubscribe_handler, verify_handler,
+};
+use crate::mail::SmtpClient;
+use crate::models::User;
+use crate::tides::{get_flood_predictions, update_tide_predictions};
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
@@ -37,13 +37,41 @@ struct Cli {
 enum Commands {
     Serve,
     Sync,
+    Notify,
 }
 
 struct AppState {
-    mailer: MailgunClient,
+    mailer: SmtpClient,
     pool: SqlitePool,
-    mailing_list_id: String,
-    domain: String,
+    base_url: String,
+    unsubscribe_secret: String,
+}
+
+impl AppState {
+    fn from_pool(pool: SqlitePool) -> Self {
+        let base_url = env::var("BASE_URL").expect("BASE_URL must be set");
+        let unsubscribe_secret =
+            env::var("UNSUBSCRIBE_SECRET").expect("UNSUBSCRIBE_SECRET must be set");
+
+        let mailer = SmtpClient::new(
+            env::var("SMTP_SERVER").expect("SMTP_SERVER must be set"),
+            env::var("SMTP_PORT")
+                .expect("SMTP_PORT must be set")
+                .parse()
+                .expect("SMTP_PORT must be a valid u16"),
+            env::var("SMTP_USER").expect("SMTP_USER must be set"),
+            env::var("SMTP_PASSWORD").expect("SMTP_PASSWORD must be set"),
+            env::var("SMTP_FROM").expect("SMTP_FROM must be set"),
+            base_url.clone(),
+        );
+
+        AppState {
+            mailer,
+            pool,
+            base_url,
+            unsubscribe_secret,
+        }
+    }
 }
 
 #[tokio::main]
@@ -72,41 +100,86 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("Database migrations applied successfully.");
 
     match cli.command {
-        Commands::Serve => serve(pool).await,
         Commands::Sync => update_tide_predictions(pool).await,
+        Commands::Serve => serve(pool).await,
+        Commands::Notify => check_and_send_notifications(pool).await,
     }
 }
 
 async fn serve(pool: SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
     println!("Starting server...");
 
-    let domain = env::var("DOMAIN").expect("DOMAIN must be set");
-    let mailgun_api_key = env::var("MAILGUN_API_KEY").expect("MAILGUN_API_KEY must be set");
-    let mailing_list_id = env::var("MAILING_LIST_ID").expect("MAILING_LIST_ID must be set");
-
-    let mailer = MailgunClient {
-        client: reqwest::Client::new(),
-        api_key: mailgun_api_key,
-    };
-
-    let app_state = Arc::new(AppState {
-        mailer,
-        pool,
-        mailing_list_id,
-        domain,
-    });
+    let app_state = Arc::new(AppState::from_pool(pool));
 
     let app = Router::new()
         .route("/", get(home_handler))
         .route("/signup", post(sign_up_handler))
         .route("/verify", get(verify_handler))
+        .route("/unsubscribe", any(unsubscribe_handler))
         .fallback(fallback_handler)
         .layer(TraceLayer::new_for_http())
-        .with_state(app_state);
+        .with_state(app_state)
+        .nest_service("/assets", ServeDir::new("assets"));
 
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:3000").await?;
-    println!("Server running on http://127.0.0.1:3000");
+    let host = env::var("HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let addr = format!("{}:3000", host);
+    let listener = tokio::net::TcpListener::bind(&addr).await?;
+    println!("Server running on http://{}", addr);
     axum::serve(listener, app).await?;
+
+    Ok(())
+}
+
+async fn check_and_send_notifications(pool: SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
+    println!("Checking for flood predictions and sending notifications...");
+
+    let base_url = env::var("BASE_URL").expect("BASE_URL must be set");
+    let unsubscribe_secret =
+        env::var("UNSUBSCRIBE_SECRET").expect("UNSUBSCRIBE_SECRET must be set");
+
+    let predictions = get_flood_predictions(&pool, chrono::Utc::now()).await?;
+    if predictions.is_empty() {
+        println!("No flood predictions found. No email notifications to send.");
+        return Ok(());
+    }
+    println!(
+        "Found {} flood predictions. Sending email notifications...",
+        predictions.len()
+    );
+
+    let recipients: Vec<User> = sqlx::query!(
+        r#"
+        SELECT id, email FROM mailing_list
+        "#
+    )
+    .fetch_all(&pool)
+    .await?
+    .into_iter()
+    .map(|record| User {
+        id: record.id,
+        email: record.email,
+        ..Default::default()
+    })
+    .collect();
+    println!("Sending emails to: {:?}", recipients);
+    let unsubscribe_links: Vec<String> = recipients
+        .iter()
+        .map(|user| {
+            format!(
+                "{}/unsubscribe?id={}&token={}",
+                &base_url,
+                &user.id,
+                &user.generate_unsubscribe_token(&unsubscribe_secret)
+            )
+        })
+        .collect();
+
+    let app_state = Arc::new(AppState::from_pool(pool));
+
+    app_state
+        .mailer
+        .send_list_notification_email(predictions, recipients, unsubscribe_links)
+        .await?;
 
     Ok(())
 }

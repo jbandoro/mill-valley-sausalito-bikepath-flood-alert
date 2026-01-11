@@ -3,6 +3,11 @@ use sqlx::FromRow;
 use uuid::{NoContext, Timestamp, Uuid};
 use validator::Validate;
 
+use hmac::{Hmac, Mac};
+use sha2::Sha256;
+
+type HmacSha256 = Hmac<Sha256>;
+
 #[derive(Debug, Deserialize, Serialize, Validate)]
 pub struct SignUpRequest {
     #[validate(email(message = "Invalid email format"))]
@@ -14,7 +19,13 @@ pub struct VerifyParams {
     pub token: String,
 }
 
-#[derive(Debug, Serialize, Deserialize, FromRow)]
+#[derive(Debug, Deserialize, Serialize)]
+pub struct UnsubscribeParams {
+    pub id: String,
+    pub token: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, FromRow, Default)]
 pub struct User {
     pub id: String,
     pub email: String,
@@ -37,8 +48,21 @@ impl User {
             is_subscribed: false,
         }
     }
+
+    pub fn generate_unsubscribe_token(&self, secret: &str) -> String {
+        let mut mac = HmacSha256::new_from_slice(secret.as_bytes()).unwrap();
+        mac.update(self.id.as_bytes());
+        let token_bytes = mac.finalize().into_bytes();
+        hex::encode(token_bytes)
+    }
+
+    pub fn verify_unsubscribe_token(&self, token: &str, secret: &str) -> bool {
+        let expected_token = self.generate_unsubscribe_token(secret);
+        expected_token == token
+    }
 }
 
+#[derive(Clone)]
 pub struct FloodDisplay {
     pub datetime: String,
     pub height: String,

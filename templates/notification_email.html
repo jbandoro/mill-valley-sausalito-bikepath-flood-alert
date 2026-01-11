@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+</head>
+<body style="margin: 0; padding: 20px; background-color: #f6f8fa; font-family: system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;">
+    <div style="max-width: 600px; margin: 0 auto; background-color: #ffffff; border: 1px solid #e1e6eb; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+        
+        <div style="padding: 30px; background-color: #f0f4f8; border-bottom: 1px solid #e1e6eb;">
+            <h1 style="color: #1a3a5a; margin: 0 0 15px 0; font-size: 24px; display: flex; align-items: center;">
+                🌊 Upcoming Flood Notification
+            </h1>
+            <p style="margin: 0 0 10px 0; color: #3b4e63; font-weight: 600;">Dear Subscriber,</p>
+            <p style="margin: 0; color: #4a5e73; line-height: 1.5;">There is a high likelihood of tidal flooding for the Mill Valley-Sausalito bike path in the next 30 days based on the following predicted high tide times:</p>
+        </div>
+
+        <div style="padding: 30px;">
+            {% for p in predictions %}
+            <div style="background-color: #ffffff; border: 1px solid #d1dbe5; border-left: 4px solid #d9534f; padding: 15px; margin-bottom: 12px; border-radius: 8px; display: block;">
+                <table width="100%" cellpadding="0" cellspacing="0">
+                    <tr>
+                        <td style="font-weight: 600; color: #1a3a5a;">{{ p.datetime }}</td>
+                        <td style="text-align: right; color: #d9534f; font-weight: 700; font-size: 1.1em;">{{ p.height }} ft</td>
+                    </tr>
+                </table>
+            </div>
+            {% endfor %}
+        </div>
+
+        <div style="padding: 0 30px 30px 30px;">
+            <p style="margin: 0 0 20px 0; color: #4a5e73; line-height: 1.5;">
+                Please take necessary precautions if you plan to use the bike path around these times. You can always check the latest forecast on our <a href="{{ homepage_url }}" style="color: #007bff; text-decoration: none; font-weight: 500;">website</a>.
+            </p>
+            <p style="margin: 0 0 20px 0; color: #1a3a5a;"><strong>Stay Safe!</strong></p>
+            
+            <div style="border-top: 1px solid #e1e6eb; padding-top: 20px; font-size: 12px; color: #708090;">
+                <p style="margin: 0;">You received this because you signed up for flooding tide alerts for
+            the MV-Sausalito bike path. You can unsubscribe at any time by clicking <a href="{{ unsubscribe_link }}">here</a>.</p>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
