@@ -6,7 +6,7 @@ use noaa_tides::{
 };
 use sqlx::sqlite::SqlitePool;
 
-const STATION_ID: &str = "9414806";
+const STATION_ID: &str = "9414819";
 pub const FLOOD_THRESHOLD_FT: f64 = 6.4;
 pub const FORECAST_DAYS: i64 = 30;
 
