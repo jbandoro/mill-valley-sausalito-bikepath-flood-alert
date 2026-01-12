@@ -9,11 +9,12 @@ on:
 jobs:
   deploy:
     runs-on: self-hosted
+    environment: prod
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
       - name: Deploy
         run: |
-          docker compose up -d --build --remove-orphans
+          docker compose up -d --build --remove-orphans --env-file ${{ secrets.FILE_LOCATION }} 
       - name: Cleanup
         run: docker image prune -f
