@@ -8,6 +8,8 @@ services:
       - "8000:3000"
     networks:
       - tunnel-net
+    env_file:
+      - .env
     environment:
       - HOST=0.0.0.0
     volumes:
@@ -20,6 +22,8 @@ services:
       - app
     entrypoint: cloudflared
     command: tunnel run
+    env_file:
+      - .env
     networks:
       - tunnel-net
 networks:
