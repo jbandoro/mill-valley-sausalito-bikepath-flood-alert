@@ -1,0 +1,20 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        INSERT INTO users (id, email, is_verified, verification_token, is_subscribed)\n        VALUES (?, ?, ?, ?, ?)\n        ON CONFLICT(email) DO UPDATE\n        SET verification_token = excluded.verification_token, is_verified = 0, is_subscribed = 0\n        WHERE users.is_verified = 0 OR users.is_subscribed = 0\n        RETURNING id;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "id",
+        "ordinal": 0,
+        "type_info": "Text"
+      }
+    ],
+    "parameters": {
+      "Right": 5
+    },
+    "nullable": [
+      false
+    ]
+  },
+  "hash": "67ad91090e604008ba814f92052991d6bb751bb7eac49bab9d4672840767ac28"
+}

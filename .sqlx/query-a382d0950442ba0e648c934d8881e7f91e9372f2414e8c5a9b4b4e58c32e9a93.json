@@ -1,0 +1,12 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        DELETE FROM tides\n        WHERE prediction_time >= ? AND prediction_time <= ?;\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": []
+  },
+  "hash": "a382d0950442ba0e648c934d8881e7f91e9372f2414e8c5a9b4b4e58c32e9a93"
+}

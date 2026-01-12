@@ -1,0 +1,26 @@
+{
+  "db_name": "SQLite",
+  "query": "\n        SELECT prediction_time, height_ft\n        FROM tides\n        WHERE prediction_time >= ? AND height_ft >= ?\n        ORDER BY prediction_time ASC\n        ",
+  "describe": {
+    "columns": [
+      {
+        "name": "prediction_time",
+        "ordinal": 0,
+        "type_info": "Datetime"
+      },
+      {
+        "name": "height_ft",
+        "ordinal": 1,
+        "type_info": "Float"
+      }
+    ],
+    "parameters": {
+      "Right": 2
+    },
+    "nullable": [
+      false,
+      false
+    ]
+  },
+  "hash": "d2d32cf74db2e17fce96bb24698b3f8989d1296747041600e49961c1aeb64f5c"
+}

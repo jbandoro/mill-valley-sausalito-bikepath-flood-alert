@@ -1,0 +1,21 @@
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+    environment: prod
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Deploy
+        env:
+          FILE_LOCATION: ${{ secrets.FILE_LOCATION }}
+        run: |
+          docker compose --env-file ${{ secrets.FILE_LOCATION }}  up -d --build --remove-orphans
+      - name: Cleanup
+        run: docker image prune -f

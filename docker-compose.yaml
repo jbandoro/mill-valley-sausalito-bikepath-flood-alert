@@ -1,0 +1,32 @@
+services:
+  app:
+    build: .
+    command: serve
+    container_name: app
+    restart: unless-stopped
+    ports:
+      - "8000:3000"
+    networks:
+      - tunnel-net
+    env_file:
+      - ${FILE_LOCATION}
+    environment:
+      - HOST=0.0.0.0
+    volumes:
+      - ${HOST_DATA_PATH}:/app/data
+  cloudflared:
+    image: cloudflare/cloudflared:latest
+    container_name: cloudflared
+    restart: unless-stopped
+    depends_on:
+      - app
+    entrypoint: cloudflared
+    env_file:
+      - ${FILE_LOCATION}
+    command: tunnel run
+    networks:
+      - tunnel-net
+networks:
+  tunnel-net:
+    driver: bridge
+    external: false

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <title>Unsubscribe - MV-Sausalito Alerts</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.1.1/css/pico.min.css">
+    <style>
+        body { display: flex; align-items: center; min-height: 100vh; }
+        .btn-danger { background-color: #d9534f; border-color: #d9534f; color: white; }
+        .btn-danger:hover { background-color: #c9302c; border-color: #c9302c; }
+    </style>
+</head>
+<body>
+    <main class="container">
+        <article style="max-width: 500px; margin: auto; text-align: center;">
+            <header>
+                <h2 style="margin-bottom: 0;">Unsubscribe</h2>
+            </header>
+            <p>
+                Confirm below to stop receiving flood notifications for the MV-Sausalito bike path. 
+                You are always welcome to sign up again later.
+            </p>
+            
+            <form method="POST" action="/unsubscribe?id={{ user_id }}&token={{ token }}">
+                <button type="submit" class="btn-danger">Confirm Unsubscribe</button>
+            </form>
+
+            <footer>
+                <a href="/" class="secondary">Nevermind, take me back</a>
+            </footer>
+        </article>
+    </main>
+</body>
+</html>
