@@ -15,6 +15,6 @@ jobs:
         uses: actions/checkout@v4
       - name: Deploy
         run: |
-          docker compose up -d --build --remove-orphans --env-file ${{ secrets.FILE_LOCATION }} 
+          docker compose --env-file ${{ secrets.FILE_LOCATION }}  up -d --build --remove-orphans
       - name: Cleanup
         run: docker image prune -f
