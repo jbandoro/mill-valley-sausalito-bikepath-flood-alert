@@ -8,6 +8,8 @@ services:
       - "8000:3000"
     networks:
       - tunnel-net
+    env_file:
+      - ${FILE_LOCATION}
     environment:
       - HOST=0.0.0.0
     volumes:
@@ -19,6 +21,8 @@ services:
     depends_on:
       - app
     entrypoint: cloudflared
+    env_file:
+      - ${FILE_LOCATION}
     command: tunnel run
     networks:
       - tunnel-net
