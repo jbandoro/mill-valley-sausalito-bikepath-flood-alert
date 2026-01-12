@@ -11,7 +11,7 @@ services:
     environment:
       - HOST=0.0.0.0
     volumes:
-      - ./data:/app/data
+      - ${HOST_DATA_PATH}:/app/data
   cloudflared:
     image: cloudflare/cloudflared:latest
     container_name: cloudflared
