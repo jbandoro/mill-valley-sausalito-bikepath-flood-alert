@@ -148,3 +148,47 @@ impl SmtpClient {
             )?)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::models::FloodDisplay;
+
+    #[test]
+    fn test_verify_template_render() {
+        let template = VerifyTemplate {
+            verification_link: "http://example.com/verify?token=123",
+            unsubscribe_link: "http://example.com/unsubscribe?token=123",
+        };
+        let rendered = template.render().unwrap();
+        assert!(rendered.contains("http://example.com/verify?token=123"));
+        assert!(rendered.contains("http://example.com/unsubscribe?token=123"));
+    }
+
+    #[test]
+    fn test_notification_template_render() {
+        let predictions = vec![
+            FloodDisplay {
+                datetime: "Monday, January 1 at 10:00AM".to_string(),
+                height: "6.5".to_string(),
+            },
+            FloodDisplay {
+                datetime: "Tuesday, January 2 at 11:00AM".to_string(),
+                height: "7.0".to_string(),
+            },
+        ];
+
+        let template = NotificationTemplate {
+            predictions: &predictions,
+            homepage_url: "http://example.com",
+            unsubscribe_link: "http://example.com/unsub",
+        };
+
+        let rendered = template.render().unwrap();
+        assert!(rendered.contains("Monday, January 1 at 10:00AM"));
+        assert!(rendered.contains("6.5"));
+        assert!(rendered.contains("Tuesday, January 2 at 11:00AM"));
+        assert!(rendered.contains("7.0"));
+        assert!(rendered.contains("http://example.com/unsub"));
+    }
+}
