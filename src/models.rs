@@ -106,8 +106,8 @@ mod tests {
             !user.verification_token.is_empty(),
             "Token should be generated"
         );
-        assert_eq!(user.is_verified, false);
-        assert_eq!(user.is_subscribed, false);
+        assert!(!user.is_verified);
+        assert!(!user.is_subscribed);
     }
 
     #[test]
