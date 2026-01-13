@@ -18,7 +18,8 @@ mod models;
 mod tides;
 
 use crate::handlers::{
-    fallback_handler, home_handler, sign_up_handler, unsubscribe_handler, verify_handler,
+    fallback_handler, home_handler, privacy_policy_handler, sign_up_handler, unsubscribe_handler,
+    verify_handler,
 };
 use crate::mail::SmtpClient;
 use crate::models::User;
@@ -116,6 +117,7 @@ async fn serve(pool: SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
         .route("/signup", post(sign_up_handler))
         .route("/verify", get(verify_handler))
         .route("/unsubscribe", any(unsubscribe_handler))
+        .route("/privacy", get(privacy_policy_handler))
         .fallback(fallback_handler)
         .layer(TraceLayer::new_for_http())
         .with_state(app_state)

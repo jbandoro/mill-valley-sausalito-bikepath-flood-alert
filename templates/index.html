@@ -101,7 +101,7 @@
           below. Emails will be a weekly reminder if there are upcoming floods predicted in the next {{ forecast_days }} days. 
           No emails will be sent if there are no floods predicted.
         </p>    
-        <form>
+        <form onsubmit="submitSignup(event)">
           <div class="grid">
             <input
               type="email"
@@ -111,10 +111,24 @@
               autocomplete="email"
               required
             >
-            <button type="submit" onclick="submitSignup(event)">
+            <button type="submit" id="signup-btn" disabled>
                 Subscribe
             </button>
           </div>
+          <fieldset>
+            <label for="terms">
+              <input 
+                type="checkbox" 
+                role="switch" 
+                id="terms" 
+                name="terms" 
+                required
+                onchange="document.getElementById('signup-btn').disabled = !this.checked"
+              >
+              I agree to the
+              <a href="/privacy" target="_blank">Privacy Policy</a>
+            </label>
+          </fieldset>
         </form>
         <p>
         You can unsubscribe at any time with the unsubscribe link that is always included in the emails.

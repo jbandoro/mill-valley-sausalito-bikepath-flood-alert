@@ -32,6 +32,5 @@ cargo run -- sync
 ## Deployment
 The application is automatically deployed using a self hosted runner on Raspberry Pi. The current deployment requires a .env file with `TUNNEL_TOKEN` set to run behind a Cloudflare tunnel.
 
-```
 
 
