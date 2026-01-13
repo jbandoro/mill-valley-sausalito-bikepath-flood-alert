@@ -254,3 +254,46 @@ pub async fn fallback_handler(
 ) -> Result<(StatusCode, String), (StatusCode, String)> {
     Err((StatusCode::NOT_FOUND, "Not Found".to_string()))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use validator::Validate;
+
+    #[test]
+    fn test_sign_up_request_validation() {
+        // Valid email
+        let req = SignUpRequest {
+            email: "valid@example.com".to_string(),
+        };
+        assert!(req.validate().is_ok());
+
+        // Invalid email
+        let req = SignUpRequest {
+            email: "invalid-email".to_string(),
+        };
+        assert!(req.validate().is_err());
+    }
+
+    #[test]
+    fn test_index_template_render() {
+        let template = IndexTemplate {
+            predictions: vec![FloodDisplay {
+                datetime: "Monday, January 1 at 5:00PM".to_string(),
+                height: "7.0".to_string(),
+            }],
+            forecast_days: 30,
+            flood_threshold: 6.5,
+        };
+
+        let rendered = template.render();
+        assert!(
+            rendered.is_ok(),
+            "Index template should render successfully"
+        );
+        let html = rendered.unwrap();
+        assert!(html.contains("Monday, January 1 at 5:00PM"));
+        assert!(html.contains("7.0"));
+        assert!(html.contains("Forecasted Floods"));
+    }
+}

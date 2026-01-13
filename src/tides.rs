@@ -89,13 +89,7 @@ pub async fn get_flood_predictions(
 
     let results = predictions
         .into_iter()
-        .map(|record| FloodDisplay {
-            datetime: record
-                .prediction_time
-                .format("%A, %B %-d at %-I:%M%p")
-                .to_string(),
-            height: format!("{:.2}", record.height_ft),
-        })
+        .map(|record| FloodDisplay::new(record.prediction_time, record.height_ft))
         .collect();
 
     Ok(results)
