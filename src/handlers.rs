@@ -162,10 +162,9 @@ pub async fn unsubscribe_handler(
         Method::POST => {
             let result = sqlx::query!(
                 r#"
-                UPDATE users
-                SET is_subscribed = 0
-                WHERE id = ?;
-                "#,
+            DELETE FROM users
+            WHERE id = ?;
+            "#,
                 params.id
             )
             .execute(&state.pool)
@@ -203,6 +202,18 @@ pub async fn unsubscribe_handler(
 pub struct VerifyResultTemplate {
     pub success: bool,
     pub message: String,
+}
+
+#[derive(Template)]
+#[template(path = "privacy_policy.html")]
+pub struct PrivacyPolicyTemplate;
+
+pub async fn privacy_policy_handler() -> impl IntoResponse {
+    let template = PrivacyPolicyTemplate;
+    match template.render() {
+        Ok(html) => Html(html).into_response(),
+        Err(_) => (StatusCode::INTERNAL_SERVER_ERROR, "Template Error").into_response(),
+    }
 }
 
 pub async fn verify_handler(
