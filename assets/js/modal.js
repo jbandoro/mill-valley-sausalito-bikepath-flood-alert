@@ -86,6 +86,7 @@ async function asyncSubmitSignup(event) {
   const modalBody = modal.querySelector("p");
   const modalFooter = modal.querySelector("footer");
   const submitBtn = event.currentTarget;
+  const form = emailInput.closest("form");
 
   // 2. Validation
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -114,6 +115,13 @@ async function asyncSubmitSignup(event) {
     if (response.ok) {
       modalTitle.innerText = "Success!";
       modalBody.innerHTML = "Check your email for a verification link.<br>";
+
+      // Reset form
+      if (form) {
+        form.reset();
+      }
+      submitBtn.disabled = true; 
+
       // Hide the "Confirm" button in the footer since we are done
       if(modalFooter.querySelector('button:not(.secondary)')) {
           modalFooter.querySelector('button:not(.secondary)').style.display = 'none';
@@ -124,7 +132,7 @@ async function asyncSubmitSignup(event) {
     }
   } catch (err) {
     modalTitle.innerText = "Connection Error";
-    modalBody.innerText = "Is the server running? Could not connect to the signup service.";
+    modalBody.innerText = "Something went wrong. Please try again";
   } finally {
     // 5. Reset Button
     submitBtn.setAttribute("aria-busy", "false");
