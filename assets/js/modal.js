@@ -80,25 +80,17 @@ async function asyncSubmitSignup(event) {
   event.preventDefault();
   
   // 1. Get Elements
-  const emailInput = document.querySelector('input[name="email"]');
+  const form = event.currentTarget;
+  const emailInput = form.querySelector('input[name="email"]');
+  const submitBtn = form.querySelector('button[type="submit"]');
+  
   const modal = document.getElementById("modal-example");
   const modalTitle = modal.querySelector("h3");
   const modalBody = modal.querySelector("p");
   const modalFooter = modal.querySelector("footer");
-  const submitBtn = event.currentTarget;
-  const form = emailInput.closest("form");
 
-  // 2. Validation
-  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  if (!emailRegex.test(emailInput.value)) {
-    // We reuse the modal to show the error
-    modalTitle.innerText = "Check your email";
-    modalBody.innerText = "Please enter a valid email address.";
-    openModal(modal);
-    return;
-  }
-
-  // 3. UI Loading State (Pico's loading spinner)
+  
+  // 2. UI Loading State (Pico's loading spinner)
   submitBtn.setAttribute("aria-busy", "true");
   submitBtn.disabled = true;
 
@@ -111,15 +103,16 @@ async function asyncSubmitSignup(event) {
 
     const resultText = await response.text();
 
-    // 4. Open Modal with Result
+    submitBtn.setAttribute("aria-busy", "false");
+
+    // 3. Open Modal with Result
     if (response.ok) {
       modalTitle.innerText = "Success!";
       modalBody.innerHTML = "Check your email for a verification link.<br>";
 
       // Reset form
-      if (form) {
-        form.reset();
-      }
+      form.reset();
+      // Ensure button is disabled (form reset unchecks the box)
       submitBtn.disabled = true; 
 
       // Hide the "Confirm" button in the footer since we are done
@@ -129,16 +122,17 @@ async function asyncSubmitSignup(event) {
     } else {
       modalTitle.innerText = "Signup Failed";
       modalBody.innerText = resultText || "Something went wrong. Please try again.";
+      // Re-enable button on failure so they can try again
+      submitBtn.disabled = false;
     }
   } catch (err) {
-    modalTitle.innerText = "Connection Error";
-    modalBody.innerText = "Something went wrong. Please try again";
-  } finally {
-    // 5. Reset Button
     submitBtn.setAttribute("aria-busy", "false");
     submitBtn.disabled = false;
-    openModal(modal); // Show the result
+    modalTitle.innerText = "Connection Error";
+    modalBody.innerText = "Something went wrong. Please try again";
   }
+  
+  openModal(modal);
 }
 
 // Global wrapper to match your onclick
