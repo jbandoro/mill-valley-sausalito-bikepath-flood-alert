@@ -1,9 +1,8 @@
 use crate::models::FloodDisplay;
 use chrono::{Duration, Utc};
 use chrono_tz::US::Pacific;
-use noaa_tides::{
-    DateRange, Datum, Interval, NoaaTideClient, PredictionsRequest, TideType, Timezone, Units,
-};
+use noaa_tides::products::predictions::TideType;
+use noaa_tides::{NoaaTideClient, PredictionsRequest, params};
 use sqlx::sqlite::SqlitePool;
 
 const STATION_ID: &str = "9414819";
@@ -17,17 +16,17 @@ pub async fn update_tide_predictions(pool: SqlitePool) -> Result<(), Box<dyn std
 
     let request = PredictionsRequest {
         station: STATION_ID.into(),
-        date_range: DateRange {
+        date_range: params::DateRange {
             begin_date,
             end_date,
         },
-        datum: Datum::MLLW,
-        time_zone: Timezone::LST_LDT,
-        interval: Interval::HighLow,
-        units: Units::English,
+        datum: params::Datum::MLLW,
+        time_zone: params::Timezone::LST_LDT,
+        interval: params::Interval::HighLow,
+        units: params::Units::English,
     };
 
-    let predictions = client.fetch(&request).await?.predictions;
+    let predictions = client.fetch_predictions(&request).await?.predictions;
 
     // Drop existing predictions in case of updates
     let begin_time = begin_date.and_hms_opt(0, 0, 0).unwrap();

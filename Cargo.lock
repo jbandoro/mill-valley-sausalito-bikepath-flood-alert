@@ -1498,9 +1498,9 @@ dependencies = [
 
 [[package]]
 name = "noaa-tides"
-version = "0.0.1"
+version = "0.1.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "bd61abb8df3bf08410085159175e785f495b8fc453eb21f01c2350af2e32bb01"
+checksum = "d866005d7b093f17e69b0656920fcf8d6919190d4d139ecf4ccb6b8e3de63376"
 dependencies = [
  "chrono",
  "reqwest",
