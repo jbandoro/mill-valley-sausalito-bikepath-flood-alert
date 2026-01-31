@@ -13,7 +13,7 @@ dotenvy = "0.15.7"
 hex = "0.4.3"
 hmac = "0.12.1"
 lettre = { version = "0.11.19", features = ["tokio1-native-tls", "hostname", "builder"] }
-noaa-tides = "0.0.1"
+noaa-tides = "0.1.1"
 serde = { version = "1.0.228", features = ["derive"] }
 sha2 = "0.10.9"
 sqlx = { version = "0.8.6", features = ["runtime-tokio", "sqlite", "chrono", "uuid"] }
