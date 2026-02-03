@@ -8,7 +8,7 @@ askama = "0.15.1"
 axum = "0.8.8"
 chrono = { version = "0.4.43", features = ["serde"] }
 chrono-tz = "0.10.4"
-clap = { version = "4.5.54", features = ["derive"] }
+clap = { version = "4.5.56", features = ["derive"] }
 dotenvy = "0.15.7"
 hex = "0.4.3"
 hmac = "0.12.1"
