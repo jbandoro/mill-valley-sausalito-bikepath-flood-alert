@@ -1,6 +1,6 @@
 {
   "db_name": "SQLite",
-  "query": "\n        SELECT prediction_time, height_ft\n        FROM tides\n        WHERE prediction_time >= ? AND height_ft >= ?\n        ORDER BY prediction_time ASC\n        ",
+  "query": "\n        SELECT prediction_time, height_ft\n        FROM tides\n        WHERE prediction_time >= ? AND prediction_time <= ?\n            AND height_ft >= ?\n        ORDER BY prediction_time ASC\n        ",
   "describe": {
     "columns": [
       {
@@ -15,12 +15,12 @@
       }
     ],
     "parameters": {
-      "Right": 2
+      "Right": 3
     },
     "nullable": [
       false,
       false
     ]
   },
-  "hash": "d2d32cf74db2e17fce96bb24698b3f8989d1296747041600e49961c1aeb64f5c"
+  "hash": "4d8cceb270d4697769d2709322552d1b29a86dd631ff84157ba0dfec6c6ce693"
 }

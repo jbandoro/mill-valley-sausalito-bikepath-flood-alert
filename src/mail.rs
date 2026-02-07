@@ -9,6 +9,8 @@ use lettre::{AsyncSmtpTransport, AsyncTransport, Message, Tokio1Executor};
 
 use lettre::transport::smtp::client::{Tls, TlsParameters};
 
+pub const NOTIFY_EMAIL_FORECAST_DAYS: i64 = 7;
+
 #[derive(Template)]
 #[template(path = "verification_email.html")]
 pub struct VerifyTemplate<'a> {
@@ -22,6 +24,7 @@ pub struct NotificationTemplate<'a> {
     pub predictions: &'a Vec<FloodDisplay>,
     pub homepage_url: &'a str,
     pub unsubscribe_link: &'a str,
+    pub forecast_days: i64,
 }
 
 #[derive(Error, Debug)]
@@ -102,6 +105,7 @@ impl SmtpClient {
                 predictions: &predictions,
                 homepage_url: &self.base_url,
                 unsubscribe_link,
+                forecast_days: NOTIFY_EMAIL_FORECAST_DAYS,
             };
             let html_body = template.render().unwrap_or_default();
             let text_body = format!(
@@ -182,6 +186,7 @@ mod tests {
             predictions: &predictions,
             homepage_url: "http://example.com",
             unsubscribe_link: "http://example.com/unsub",
+            forecast_days: NOTIFY_EMAIL_FORECAST_DAYS,
         };
 
         let rendered = template.render().unwrap();
@@ -190,5 +195,6 @@ mod tests {
         assert!(rendered.contains("Tuesday, January 2 at 11:00AM"));
         assert!(rendered.contains("7.0"));
         assert!(rendered.contains("http://example.com/unsub"));
+        assert!(rendered.contains("next 7 days"));
     }
 }

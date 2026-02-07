@@ -67,20 +67,24 @@ pub async fn update_tide_predictions(pool: SqlitePool) -> Result<(), Box<dyn std
     Ok(())
 }
 
+/// Gets flood predictions for the next forecast_days
 pub async fn get_flood_predictions(
     pool: &SqlitePool,
-    check_time: chrono::DateTime<Utc>,
+    forecast_days: i64,
 ) -> Result<Vec<FloodDisplay>, Box<dyn std::error::Error>> {
-    let local_check_time = check_time.with_timezone(&Pacific).naive_local();
+    let local_time_start = chrono::Utc::now().with_timezone(&Pacific).naive_local();
+    let local_time_end = local_time_start + Duration::days(forecast_days);
 
     let predictions = sqlx::query!(
         r#"
         SELECT prediction_time, height_ft
         FROM tides
-        WHERE prediction_time >= ? AND height_ft >= ?
+        WHERE prediction_time >= ? AND prediction_time <= ?
+            AND height_ft >= ?
         ORDER BY prediction_time ASC
         "#,
-        local_check_time,
+        local_time_start,
+        local_time_end,
         FLOOD_THRESHOLD_FT,
     )
     .fetch_all(pool)
