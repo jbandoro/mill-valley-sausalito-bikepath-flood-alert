@@ -5,7 +5,6 @@ use axum::{
     extract::{Query, State},
     http::{Method, StatusCode},
 };
-use chrono::Utc;
 use std::sync::Arc;
 use validator::Validate;
 
@@ -22,9 +21,7 @@ pub struct IndexTemplate {
 }
 
 pub async fn home_handler(State(state): State<Arc<AppState>>) -> impl axum::response::IntoResponse {
-    let now = Utc::now();
-
-    let predictions = match get_flood_predictions(&state.pool, now).await {
+    let predictions = match get_flood_predictions(&state.pool, FORECAST_DAYS).await {
         Ok(preds) => preds,
         Err(e) => {
             eprintln!("Error fetching predictions: {}", e);

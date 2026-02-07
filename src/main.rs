@@ -21,7 +21,7 @@ use crate::handlers::{
     fallback_handler, home_handler, privacy_policy_handler, sign_up_handler, unsubscribe_handler,
     verify_handler,
 };
-use crate::mail::SmtpClient;
+use crate::mail::{NOTIFY_EMAIL_FORECAST_DAYS, SmtpClient};
 use crate::models::User;
 use crate::tides::{get_flood_predictions, update_tide_predictions};
 use clap::{Parser, Subcommand};
@@ -139,7 +139,7 @@ async fn check_and_send_notifications(pool: SqlitePool) -> Result<(), Box<dyn st
     let unsubscribe_secret =
         env::var("UNSUBSCRIBE_SECRET").expect("UNSUBSCRIBE_SECRET must be set");
 
-    let predictions = get_flood_predictions(&pool, chrono::Utc::now()).await?;
+    let predictions = get_flood_predictions(&pool, NOTIFY_EMAIL_FORECAST_DAYS).await?;
     if predictions.is_empty() {
         println!("No flood predictions found. No email notifications to send.");
         return Ok(());
