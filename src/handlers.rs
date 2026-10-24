@@ -12,6 +12,11 @@ use crate::AppState;
 use crate::models::{FloodDisplay, SignUpRequest, UnsubscribeParams, User, VerifyParams};
 use crate::tides::{FLOOD_THRESHOLD_FT, FORECAST_DAYS, get_flood_predictions};
 
+
+const VERIFICATION_RESEND_COOLDOWN_MINUTES: i64 = 15;
+const SIGN_UP_GENERIC_MESSAGE: &str =
+    "If your email address isn't already verified, a verification link has been sent. Please check your inbox.";
+
 #[derive(Template)]
 #[template(path = "index.html")]
 pub struct IndexTemplate {
@@ -58,29 +63,30 @@ pub async fn sign_up_handler(
 
     let user = User::new(payload.email);
 
+
+    let cooldown_modifier = format!("-{} minutes", VERIFICATION_RESEND_COOLDOWN_MINUTES);
+
     let result = sqlx::query!(
         r#"
         INSERT INTO users (id, email, is_verified, verification_token, is_subscribed)
         VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(email) DO UPDATE
-        SET verification_token = excluded.verification_token, is_verified = 0, is_subscribed = 0
-        WHERE users.is_verified = 0 OR users.is_subscribed = 0
+        SET verification_token = excluded.verification_token
+        WHERE users.is_verified = 0
+          AND users.updated_at <= datetime('now', ?)
         RETURNING id;
         "#,
         user.id,
         user.email,
         user.is_verified,
         user.verification_token,
-        user.is_subscribed
+        user.is_subscribed,
+        cooldown_modifier
     )
     .fetch_optional(&state.pool)
     .await;
 
     match result {
-        Ok(None) => Err((
-            StatusCode::CONFLICT,
-            "Email already registered and verified".to_string(),
-        )),
         Ok(Some(res)) => {
             let user = User { id: res.id, ..user };
             let validation_link = format!(
@@ -98,9 +104,9 @@ pub async fn sign_up_handler(
                 .send_verification_email(&user, &validation_link, &unsubscribe_link)
                 .await
             {
-                Ok(_) => Ok((StatusCode::OK, "Verification email sent!".to_string())),
+                Ok(_) => Ok((StatusCode::OK, SIGN_UP_GENERIC_MESSAGE.to_string())),
                 Err(e) => {
-                    eprintln!("Mailgun error during verification: {:?}", e);
+                    tracing::error!("Mailgun error during verification: {:?}", e);
 
                     Err((
                         StatusCode::INTERNAL_SERVER_ERROR,
@@ -109,8 +115,9 @@ pub async fn sign_up_handler(
                 }
             }
         }
+        Ok(None) => Ok((StatusCode::OK, SIGN_UP_GENERIC_MESSAGE.to_string())),
         Err(e) => {
-            eprintln!("Database error: {:?}", e);
+            tracing::error!("Database error during sign up: {:?}", e);
             Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Internal server error".to_string(),
