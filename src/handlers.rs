@@ -151,11 +151,11 @@ pub async fn sign_up_handler(
             let user = User { id: res.id, ..user };
             let validation_link = format!(
                 "{}/verify?token={}",
-                &state.base_url, user.verification_token
+                state.base_url, user.verification_token
             );
             let unsubscribe_link = format!(
                 "{}/unsubscribe?id={}&token={}",
-                &state.base_url,
+                state.base_url,
                 user.id,
                 user.generate_unsubscribe_token(&state.unsubscribe_secret)
             );

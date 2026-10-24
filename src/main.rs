@@ -174,9 +174,9 @@ async fn check_and_send_notifications(pool: SqlitePool) -> Result<(), Box<dyn st
         .map(|user| {
             format!(
                 "{}/unsubscribe?id={}&token={}",
-                &base_url,
-                &user.id,
-                &user.generate_unsubscribe_token(&unsubscribe_secret)
+                base_url,
+                user.id,
+                user.generate_unsubscribe_token(&unsubscribe_secret)
             )
         })
         .collect();

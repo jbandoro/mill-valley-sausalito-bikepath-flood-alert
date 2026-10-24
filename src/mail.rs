@@ -110,7 +110,7 @@ impl SmtpClient {
             let html_body = template.render().unwrap_or_default();
             let text_body = format!(
                 "Upcoming potential floods for the MV-Sausalito bike path. Please visit {} for details.\n\nUnsubscribe link: {}",
-                &self.base_url, &unsubscribe_link
+                self.base_url, unsubscribe_link
             );
 
             let email_msg =
