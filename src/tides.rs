@@ -6,7 +6,7 @@ use noaa_tides::{NoaaTideClient, PredictionsRequest, params};
 use sqlx::sqlite::SqlitePool;
 
 const STATION_ID: &str = "9414819";
-pub const FLOOD_THRESHOLD_FT: f64 = 6.4;
+pub const FLOOD_THRESHOLD_FT: f64 = 6.1;
 pub const FORECAST_DAYS: i64 = 30;
 
 pub async fn update_tide_predictions(pool: SqlitePool) -> Result<(), Box<dyn std::error::Error>> {
