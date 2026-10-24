@@ -5,12 +5,65 @@ use axum::{
     extract::{Query, State},
     http::{Method, StatusCode},
 };
+use serde::Deserialize;
 use std::sync::Arc;
 use validator::Validate;
 
 use crate::AppState;
 use crate::models::{FloodDisplay, SignUpRequest, UnsubscribeParams, User, VerifyParams};
 use crate::tides::{FLOOD_THRESHOLD_FT, FORECAST_DAYS, get_flood_predictions};
+
+const VERIFICATION_RESEND_COOLDOWN_MINUTES: i64 = 15;
+const SIGN_UP_GENERIC_MESSAGE: &str = "If your email address isn't already verified, a verification link has been sent. Please check your inbox.";
+
+const TURNSTILE_VERIFY_URL: &str = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+
+#[derive(serde::Serialize)]
+struct TurnstileVerifyRequest<'a> {
+    secret: &'a str,
+    response: &'a str,
+}
+
+#[derive(Deserialize)]
+struct TurnstileVerifyResponse {
+    success: bool,
+    #[serde(rename = "error-codes", default)]
+    error_codes: Vec<String>,
+}
+
+async fn verify_turnstile(client: &reqwest::Client, secret: &str, token: &str) -> bool {
+    if token.is_empty() {
+        return false;
+    }
+
+    let response = client
+        .post(TURNSTILE_VERIFY_URL)
+        .json(&TurnstileVerifyRequest {
+            secret,
+            response: token,
+        })
+        .send()
+        .await;
+
+    match response {
+        Ok(resp) => match resp.json::<TurnstileVerifyResponse>().await {
+            Ok(body) => {
+                if !body.success {
+                    tracing::warn!("Turnstile verification failed: {:?}", body.error_codes);
+                }
+                body.success
+            }
+            Err(e) => {
+                tracing::error!("Failed to parse Turnstile response: {:?}", e);
+                false
+            }
+        },
+        Err(e) => {
+            tracing::error!("Turnstile verification request failed: {:?}", e);
+            false
+        }
+    }
+}
 
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -56,40 +109,53 @@ pub async fn sign_up_handler(
         ));
     }
 
+    if !verify_turnstile(
+        &state.http_client,
+        &state.turnstile_secret,
+        &payload.turnstile_token,
+    )
+    .await
+    {
+        return Err((
+            StatusCode::FORBIDDEN,
+            "Bot verification failed. Please reload the page and try again.".to_string(),
+        ));
+    }
+
     let user = User::new(payload.email);
+
+    let cooldown_modifier = format!("-{} minutes", VERIFICATION_RESEND_COOLDOWN_MINUTES);
 
     let result = sqlx::query!(
         r#"
         INSERT INTO users (id, email, is_verified, verification_token, is_subscribed)
         VALUES (?, ?, ?, ?, ?)
         ON CONFLICT(email) DO UPDATE
-        SET verification_token = excluded.verification_token, is_verified = 0, is_subscribed = 0
-        WHERE users.is_verified = 0 OR users.is_subscribed = 0
+        SET verification_token = excluded.verification_token
+        WHERE users.is_verified = 0
+          AND users.updated_at <= datetime('now', ?)
         RETURNING id;
         "#,
         user.id,
         user.email,
         user.is_verified,
         user.verification_token,
-        user.is_subscribed
+        user.is_subscribed,
+        cooldown_modifier
     )
     .fetch_optional(&state.pool)
     .await;
 
     match result {
-        Ok(None) => Err((
-            StatusCode::CONFLICT,
-            "Email already registered and verified".to_string(),
-        )),
         Ok(Some(res)) => {
             let user = User { id: res.id, ..user };
             let validation_link = format!(
                 "{}/verify?token={}",
-                &state.base_url, user.verification_token
+                state.base_url, user.verification_token
             );
             let unsubscribe_link = format!(
                 "{}/unsubscribe?id={}&token={}",
-                &state.base_url,
+                state.base_url,
                 user.id,
                 user.generate_unsubscribe_token(&state.unsubscribe_secret)
             );
@@ -98,9 +164,9 @@ pub async fn sign_up_handler(
                 .send_verification_email(&user, &validation_link, &unsubscribe_link)
                 .await
             {
-                Ok(_) => Ok((StatusCode::OK, "Verification email sent!".to_string())),
+                Ok(_) => Ok((StatusCode::OK, SIGN_UP_GENERIC_MESSAGE.to_string())),
                 Err(e) => {
-                    eprintln!("Mailgun error during verification: {:?}", e);
+                    tracing::error!("Mailgun error during verification: {:?}", e);
 
                     Err((
                         StatusCode::INTERNAL_SERVER_ERROR,
@@ -109,8 +175,9 @@ pub async fn sign_up_handler(
                 }
             }
         }
+        Ok(None) => Ok((StatusCode::OK, SIGN_UP_GENERIC_MESSAGE.to_string())),
         Err(e) => {
-            eprintln!("Database error: {:?}", e);
+            tracing::error!("Database error during sign up: {:?}", e);
             Err((
                 StatusCode::INTERNAL_SERVER_ERROR,
                 "Internal server error".to_string(),
@@ -273,12 +340,14 @@ mod tests {
         // Valid email
         let req = SignUpRequest {
             email: "valid@example.com".to_string(),
+            turnstile_token: String::new(),
         };
         assert!(req.validate().is_ok());
 
         // Invalid email
         let req = SignUpRequest {
             email: "invalid-email".to_string(),
+            turnstile_token: String::new(),
         };
         assert!(req.validate().is_err());
     }

@@ -1,4 +1,4 @@
-FROM rust:1.92-slim-bookworm AS builder
+FROM rust:1.99.1-slim-trixie AS builder
 
 RUN apt-get update && apt-get install -y \
     pkg-config \
@@ -13,7 +13,7 @@ ENV SQLX_OFFLINE=true
 
 RUN cargo build --release 
 
-FROM debian:bookworm-slim AS runtime
+FROM debian:trixie-slim AS runtime
 WORKDIR /app
 
 RUN apt-get update && apt-get install -y \
