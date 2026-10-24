@@ -94,16 +94,40 @@ async function asyncSubmitSignup(event) {
   submitBtn.setAttribute("aria-busy", "true");
   submitBtn.disabled = true;
 
+  let turnstileToken = "";
+  if (window.turnstile && typeof window.turnstile.getResponse === "function") {
+    turnstileToken = window.turnstile.getResponse() || "";
+  }
+  if (!turnstileToken) {
+    const turnstileInput = form.querySelector('[name="cf-turnstile-response"]');
+    turnstileToken = turnstileInput ? turnstileInput.value : "";
+  }
+
+  if (!turnstileToken) {
+    submitBtn.setAttribute("aria-busy", "false");
+    submitBtn.disabled = false;
+    modalTitle.innerText = "Please wait";
+    modalBody.innerText =
+      "The bot-verification check hasn't finished yet. Give it a moment and try again.";
+    openModal(modal);
+    return;
+  }
+
   try {
     const response = await fetch('/signup', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email: emailInput.value })
+      body: JSON.stringify({ email: emailInput.value, turnstile_token: turnstileToken })
     });
 
     const resultText = await response.text();
 
     submitBtn.setAttribute("aria-busy", "false");
+
+    // Turnstile tokens are single-use
+    if (window.turnstile) {
+      window.turnstile.reset();
+    }
 
     // 3. Open Modal with Result
     if (response.ok) {
@@ -128,6 +152,9 @@ async function asyncSubmitSignup(event) {
   } catch (err) {
     submitBtn.setAttribute("aria-busy", "false");
     submitBtn.disabled = false;
+    if (window.turnstile) {
+      window.turnstile.reset();
+    }
     modalTitle.innerText = "Connection Error";
     modalBody.innerText = "Something went wrong. Please try again";
   }

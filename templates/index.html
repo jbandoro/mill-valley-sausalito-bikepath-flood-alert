@@ -13,6 +13,8 @@
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@picocss/pico@2.1.1/css/pico.min.css"
     >
+    <!-- Cloudflare Turnstile -->
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>
     <style>
     nav {
         position: sticky;
@@ -130,6 +132,10 @@
               <a href="/privacy" target="_blank">Privacy Policy</a>
             </label>
           </fieldset>
+          <div
+            class="cf-turnstile"
+            data-sitekey="0x4AAAAAAFkT_soAS8mWI4nm"
+          ></div>
         </form>
         <p>
         You can unsubscribe at any time with the unsubscribe link that is always included in the emails.

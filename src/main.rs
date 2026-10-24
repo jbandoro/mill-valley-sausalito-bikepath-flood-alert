@@ -46,6 +46,8 @@ struct AppState {
     pool: SqlitePool,
     base_url: String,
     unsubscribe_secret: String,
+    turnstile_secret: String,
+    http_client: reqwest::Client,
 }
 
 impl AppState {
@@ -53,6 +55,7 @@ impl AppState {
         let base_url = env::var("BASE_URL").expect("BASE_URL must be set");
         let unsubscribe_secret =
             env::var("UNSUBSCRIBE_SECRET").expect("UNSUBSCRIBE_SECRET must be set");
+        let turnstile_secret = env::var("TURNSTILE_SECRET").expect("TURNSTILE_SECRET must be set");
 
         let mailer = SmtpClient::new(
             env::var("SMTP_SERVER").expect("SMTP_SERVER must be set"),
@@ -71,6 +74,8 @@ impl AppState {
             pool,
             base_url,
             unsubscribe_secret,
+            turnstile_secret,
+            http_client: reqwest::Client::new(),
         }
     }
 }

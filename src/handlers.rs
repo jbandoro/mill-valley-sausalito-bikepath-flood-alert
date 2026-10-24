@@ -5,6 +5,7 @@ use axum::{
     extract::{Query, State},
     http::{Method, StatusCode},
 };
+use serde::Deserialize;
 use std::sync::Arc;
 use validator::Validate;
 
@@ -12,10 +13,57 @@ use crate::AppState;
 use crate::models::{FloodDisplay, SignUpRequest, UnsubscribeParams, User, VerifyParams};
 use crate::tides::{FLOOD_THRESHOLD_FT, FORECAST_DAYS, get_flood_predictions};
 
-
 const VERIFICATION_RESEND_COOLDOWN_MINUTES: i64 = 15;
-const SIGN_UP_GENERIC_MESSAGE: &str =
-    "If your email address isn't already verified, a verification link has been sent. Please check your inbox.";
+const SIGN_UP_GENERIC_MESSAGE: &str = "If your email address isn't already verified, a verification link has been sent. Please check your inbox.";
+
+const TURNSTILE_VERIFY_URL: &str = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
+
+#[derive(serde::Serialize)]
+struct TurnstileVerifyRequest<'a> {
+    secret: &'a str,
+    response: &'a str,
+}
+
+#[derive(Deserialize)]
+struct TurnstileVerifyResponse {
+    success: bool,
+    #[serde(rename = "error-codes", default)]
+    error_codes: Vec<String>,
+}
+
+async fn verify_turnstile(client: &reqwest::Client, secret: &str, token: &str) -> bool {
+    if token.is_empty() {
+        return false;
+    }
+
+    let response = client
+        .post(TURNSTILE_VERIFY_URL)
+        .json(&TurnstileVerifyRequest {
+            secret,
+            response: token,
+        })
+        .send()
+        .await;
+
+    match response {
+        Ok(resp) => match resp.json::<TurnstileVerifyResponse>().await {
+            Ok(body) => {
+                if !body.success {
+                    tracing::warn!("Turnstile verification failed: {:?}", body.error_codes);
+                }
+                body.success
+            }
+            Err(e) => {
+                tracing::error!("Failed to parse Turnstile response: {:?}", e);
+                false
+            }
+        },
+        Err(e) => {
+            tracing::error!("Turnstile verification request failed: {:?}", e);
+            false
+        }
+    }
+}
 
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -61,8 +109,20 @@ pub async fn sign_up_handler(
         ));
     }
 
-    let user = User::new(payload.email);
+    if !verify_turnstile(
+        &state.http_client,
+        &state.turnstile_secret,
+        &payload.turnstile_token,
+    )
+    .await
+    {
+        return Err((
+            StatusCode::FORBIDDEN,
+            "Bot verification failed. Please reload the page and try again.".to_string(),
+        ));
+    }
 
+    let user = User::new(payload.email);
 
     let cooldown_modifier = format!("-{} minutes", VERIFICATION_RESEND_COOLDOWN_MINUTES);
 
@@ -280,12 +340,14 @@ mod tests {
         // Valid email
         let req = SignUpRequest {
             email: "valid@example.com".to_string(),
+            turnstile_token: String::new(),
         };
         assert!(req.validate().is_ok());
 
         // Invalid email
         let req = SignUpRequest {
             email: "invalid-email".to_string(),
+            turnstile_token: String::new(),
         };
         assert!(req.validate().is_err());
     }

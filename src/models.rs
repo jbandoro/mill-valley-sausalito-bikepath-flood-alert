@@ -13,6 +13,8 @@ type HmacSha256 = Hmac<Sha256>;
 pub struct SignUpRequest {
     #[validate(email(message = "Invalid email format"))]
     pub email: String,
+    #[serde(default)]
+    pub turnstile_token: String,
 }
 
 #[derive(Debug, Deserialize, Serialize)]

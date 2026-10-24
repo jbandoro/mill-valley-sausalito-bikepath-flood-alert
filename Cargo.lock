@@ -1437,6 +1437,7 @@ dependencies = [
  "hmac",
  "lettre",
  "noaa-tides",
+ "reqwest",
  "serde",
  "sha2",
  "sqlx",
